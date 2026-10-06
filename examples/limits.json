@@ -1,0 +1,11 @@
+{
+  "max_order_notional": "3000",
+  "max_gross_notional": "20000",
+  "min_cash_reserve": "1000",
+  "max_snapshot_age_s": "300",
+  "symbols": {
+    "AAA": {
+      "max_position_notional": "8000"
+    }
+  }
+}

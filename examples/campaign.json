@@ -1,0 +1,61 @@
+{
+  "campaign_id": "original-walk-forward",
+  "inputs": [
+    {
+      "id": "training",
+      "path": "training.csv",
+      "sha256": "afb63eb970504ecec0862e8496c7f7af6849aed21c5352f48cd12608777c6eb9",
+      "date_column": "date"
+    },
+    {
+      "id": "scores",
+      "path": "scores.csv",
+      "sha256": "7bc00e1ead56d89ad9580fccf6333fceb217552f3a923ac5fd033f0b806ab5ad",
+      "date_column": "date"
+    },
+    {
+      "id": "next_training",
+      "path": "next_training.csv",
+      "sha256": "0e30aa592146504e38538ce371b5874a8cb70fdf83df883e6318fbb4af13a806",
+      "date_column": "date"
+    },
+    {
+      "id": "next_scores",
+      "path": "next_scores.csv",
+      "sha256": "c31de17a4033531633ea7337dfec7e5eb6361dca05ebbd3dc25e8b5a7be9b1ea",
+      "date_column": "date"
+    }
+  ],
+  "candidates": [
+    {
+      "candidate_id": "fold-2020",
+      "family": "momentum",
+      "spec_path": "factor.json",
+      "spec_sha256": "e860e81f14c4cf971c7dcaf49e6a3c01179d1ead0c8699fca9271f6d5fd75215",
+      "visible_through": "2019-12-31",
+      "inputs": [
+        "training"
+      ],
+      "score_input": "scores",
+      "score_window": {
+        "start": "2020-01-02",
+        "end": "2020-12-31"
+      }
+    },
+    {
+      "candidate_id": "fold-2021",
+      "family": "momentum",
+      "spec_path": "factor.json",
+      "spec_sha256": "e860e81f14c4cf971c7dcaf49e6a3c01179d1ead0c8699fca9271f6d5fd75215",
+      "visible_through": "2020-12-31",
+      "inputs": [
+        "next_training"
+      ],
+      "score_input": "next_scores",
+      "score_window": {
+        "start": "2021-01-04",
+        "end": "2021-12-31"
+      }
+    }
+  ]
+}

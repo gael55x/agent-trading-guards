@@ -1,0 +1,33 @@
+{
+  "status": "Implementation source and single-owner paper example reviewed against diagram contract; native Medium rendering pending",
+  "renderer": "@mermaid-js/mermaid-cli@12.0.0",
+  "authorship": "Original Codex diagrams; original tools led by Claude Opus5.5 and independently reviewed by Codex",
+  "captions": {
+    "order-path": "A paper workflow boundary: user-owned limits and a fresh supplied snapshot determine admission. Confidence stays metadata. The single-owner caller updates the book after a simulated fill; this diagram does not establish live or concurrent execution safety.",
+    "visibility-window": "An audit of declared knowledge and recorded scoring data. Reusing a factor in a different legitimate walk-forward fold is allowed; repeating the same declared trial is flagged. Declarations are not trusted timestamp or complete-knowledge evidence."
+  },
+  "alt_text": {
+    "order-path": "Agent proposal, user limits and cash/holdings/pending snapshot feed a decision. Refusal returns reasons; admission goes to the single-owner paper executor, whose simulated fill updates the next snapshot.",
+    "visibility-window": "Training files and declared visibility feed hash/date checks. Recorded score dates are checked against a later scoring window. Trial fingerprints distinguish valid different folds from repeated identical declarations."
+  },
+  "outputs": {
+    "order-path.mmd": "a671f486bd6331ee334c18619f0ce4e5c511602f6e0522015b52e5c0fef171f6",
+    "order-path.png": "b6882106b92b542209e4d4f30e0c051e16d4ecce545a1df6be6cd02a81520309",
+    "order-path.svg": "4b31b54d58b819f8501f3da8eda3ee5347f0f3033eba9e776ecc482bbb1a64d9",
+    "visibility-window.mmd": "1e7b6a59610c31c45b5ae0b99b8285c00a1c399d835aabb23bb33087b335fc6c",
+    "visibility-window.png": "fef8e48c3558846dbc46524210869b40ecb773bbc455e5fe6ed980e5135ffa3f",
+    "visibility-window.svg": "bf4a755460151e40df6c93ca33d99050654785537072b9b1daa9b7d023c381da"
+  },
+  "dimensions": {
+    "order-path.png": {
+      "width": 1036,
+      "height": 1478
+    },
+    "visibility-window.png": {
+      "width": 1196,
+      "height": 1152
+    }
+  },
+  "visual_review": "PNG exports inspected for readable unclipped labels; consistent with reviewed tool scopes. Native article caption/alt/readback pending.",
+  "render_command": "mmdc -i NAME.mmd -o NAME.png -c mermaid.json -p LOCAL_PUPPETEER_CONFIG.json --size 1600 -s 2 -b white; replace .png with .svg and omit scale for SVG export"
+}

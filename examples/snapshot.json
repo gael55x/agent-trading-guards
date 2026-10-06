@@ -1,0 +1,18 @@
+{
+  "as_of": "2026-10-09T12:00:00Z",
+  "cash": "4000",
+  "positions": {
+    "AAA": {
+      "qty": "50",
+      "mark": "100"
+    }
+  },
+  "pending": [
+    {
+      "side": "buy",
+      "symbol": "AAA",
+      "qty": "10",
+      "limit_price": "100"
+    }
+  ]
+}

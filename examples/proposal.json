@@ -1,0 +1,8 @@
+{
+  "proposal_id": "original-paper-1",
+  "symbol": "AAA",
+  "side": "buy",
+  "qty": "20",
+  "limit_price": "100",
+  "confidence": "0.9"
+}

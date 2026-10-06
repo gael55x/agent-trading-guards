@@ -1,0 +1,15 @@
+flowchart TB
+  D[Training files] --> H[Check hashes and training dates]
+  V[Declared cutoff] --> H
+  H --> W[Check scoring window]
+  Q[Recorded scores] --> W
+  W --> A[Check score dates]
+  A --> T[Compare recorded trials]
+  T --> P[Same factor; different valid folds]
+  T --> R[Same declared trial; flag duplicate]
+  classDef source fill:#eef6f5,stroke:#39857d,color:#172c38;
+  classDef check fill:#e7eef7,stroke:#526b91,color:#172c38;
+  classDef refusal fill:#fff0ed,stroke:#ad6556,color:#172c38;
+  class D,V,Q source;
+  class H,W,A,T,P check;
+  class R refusal;

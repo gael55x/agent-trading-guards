@@ -1,0 +1,15 @@
+flowchart TB
+  A[Agent order] --> G{Check inputs}
+  L[User limits] --> G
+  S[Cash, holdings and pending orders] --> G
+  G -->|REFUSE| R[Refuse with reasons]
+  G -->|ADMIT| E[Single-owner executor]
+  E --> F[Simulated fill updates book]
+  F --> S
+  C[Confidence metadata] -.-> A
+  classDef source fill:#eef6f5,stroke:#39857d,color:#172c38;
+  classDef gate fill:#e7eef7,stroke:#526b91,color:#172c38;
+  classDef refusal fill:#fff0ed,stroke:#ad6556,color:#172c38;
+  class A,L,S,C source;
+  class G,E,F gate;
+  class R refusal;
