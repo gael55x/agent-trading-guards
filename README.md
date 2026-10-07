@@ -1,99 +1,134 @@
 # Agent Trading Guards
 
-Two local Python tools for a trading research workflow: check a proposed cash-equity order against hard limits, and audit the files and dates declared in a factor experiment. Python 3.10 or newer; standard library only. No API keys, accounts, broker connections or package installation.
+An agent can propose a trade or a factor. These two Python tools check the proposal against your account limits or the experiment's declared data before you act on it.
 
-Original implementation led by Claude Opus 5.5, independently reviewed and tested by Codex. All supplied examples are constructed data. No trading returns were measured.
+Both tools run locally on Python 3.10 or newer and use only the standard library. They need no installation, API keys, accounts or network access. The examples use constructed data, and nothing here measures trading returns.
 
-## Try an order in five minutes
+## Which tool do you need?
 
-From this directory:
+| If you are… | Use | It answers |
+|---|---|---|
+| letting an agent propose orders for an account | `orderguard.py` | Does this order fit the supplied cash, holdings, pending orders and limits? |
+| comparing factors that an agent proposed and backtested | `factoraudit.py` | Do the declared files, hashes and dates keep construction data out of the scoring window? |
+
+The two tools are independent. Neither imports the other, so you can adopt one without the other.
+
+## Get the code
+
+```sh
+git clone https://github.com/gael55x/agent-trading-guards.git
+cd agent-trading-guards
+python3 --version   # 3.10 or newer
+```
+
+Run every command below from the repository root.
+
+## Order guard: check before you submit
+
+![Flowchart of the order path. The agent's proposed order, the user's limits, and the account's cash, holdings and pending orders all feed one check. A refusal returns reasons. An admission goes to a single-owner executor, and its simulated fill updates the account state used by the next check. Confidence is attached to the agent's proposal only as metadata.](diagrams/order-path.png)
+
+The agent proposes an order, and the account owner supplies the limits and the current account state. The guard then admits the order or refuses it with reason codes. Only an admitted order should reach your submission code. The next check should use account state refreshed from what actually executed.
+
+**Admit.** The example account has $4,000 cash, $1,000 reserved for a pending buy, a $1,000 cash floor and $5,000 already held. A $2,000 buy lands exactly on the $8,000 position cap:
 
 ```sh
 python3 orderguard.py check --limits examples/limits.json --snapshot examples/snapshot.json --proposal examples/proposal.json --now 2026-10-09T12:01:00Z
 ```
 
-The example has $4,000 cash, $1,000 reserved for a pending buy, a $1,000 cash floor and $5,000 already held. A proposed $2,000 buy exactly reaches the $8,000 position cap and leaves $1,000 available after pending reservations. The verdict is `ADMIT` and exit status is 0.
+The result is `ADMIT` with exit status 0.
 
-Increase the limit price from 100 to 100.01:
+**Refuse.** This example raises the limit price from 100 to 100.01:
 
 ```sh
 python3 orderguard.py check --limits examples/limits.json --snapshot examples/snapshot.json --proposal examples/proposal-too-large.json --now 2026-10-09T12:01:00Z
 ```
 
-The verdict is `REFUSE`, exit status 2, with `CASH_RESERVE` and `POSITION_LIMIT`: available cash is 999.8 and exposure is 8000.2. Confidence remains metadata in both cases.
+The result is `REFUSE` with exit status 2 and the reasons `CASH_RESERVE` and `POSITION_LIMIT`. Available cash would be 999.8 and exposure would be 8000.2.
+
+**Loop.** This example runs a check, a fill and a second check:
 
 ```sh
 python3 examples/paper_loop.py
 ```
 
-This runnable integration example checks the first order, assumes one full paper fill, updates the book, and refuses the next buy. It never contacts a broker. The frozen `--now` values make these examples reproducible; omit `--now` when checking a genuinely current supplied snapshot.
+It admits the first buy, assumes one full paper fill, updates cash and shares, and then refuses a further $100 buy. It never contacts a broker. For your own loop:
 
-## Put the order check before submission
+1. Call `decide(limits, snapshot, proposal, now)`.
+2. Treat `Malformed` as an input error.
+3. Submit only on `ADMIT`.
+4. Build the next snapshot from real executions.
 
-```python
-from orderguard import Malformed, decide
+The `--now` values are fixed so the examples are reproducible. Omit `--now` when you check a genuinely current snapshot.
 
-# Account owner supplies validated current state and serializes check/submit.
-try:
-    report = decide(limits, snapshot, proposal, now_utc_string)
-except Malformed as error:
-    stop_with_input_error(str(error))
-else:
-    if report['verdict'] == 'ADMIT':
-        submit_using_account_owner(proposal)
-    else:
-        record_refusal(report)
-```
+### Connecting it to your account
 
-`stop_with_input_error`, `submit_using_account_owner` and `record_refusal` are your integration boundaries, not functions shipped here. Do not update holdings because a proposal passed: use actual execution outcomes. An unfilled order belongs in the next snapshot's `pending` remainders. Refresh authoritative state after fills, cancellations and partial fills.
+The account owner sets the limits. Supply current cash, holdings, marks and every pending order; the guard cannot verify quotes or notice an omitted order. Confidence stays metadata and never changes a verdict.
 
-Limits belong to the account owner. The model proposes an order; it does not supply its own permission limits. Amounts are **decimal strings**, up to 20 integer and 12 fractional digits. JSON numbers, negative values, exponents, nonfinite values, unknown fields and duplicate JSON keys are rejected. Timestamps use `YYYY-MM-DDTHH:MM:SSZ` in UTC; future snapshots are malformed and old snapshots are refused.
+Your execution code must serialize checking and submission, handle fees, slippage, fills and cancellations, and refresh the snapshot from actual executions. Two concurrent checks against the same snapshot can both pass. An admission is not a fill or a live safety guarantee.
 
-Exposure is held quantity times supplied mark, plus pending buys at their supplied limits, plus the proposed buy. Pending sells neither free cash nor reduce counted exposure. Sellable shares are held quantity minus pending sells. Sells bypass buy-only cash/exposure caps so a known over-limit position can be reduced; freshness and known-symbol requirements still apply. Shorts, margin, derivatives, FX conversion, fees, slippage and automatic protective orders are outside this tool. Include their costs in an appropriate upstream model before adopting a broader execution workflow.
+The tool covers cash accounts, long-only equities and limit-priced orders. Shorts, margin, derivatives, FX and protective orders are outside its model.
 
-An admission only describes supplied state and prices. This tool cannot verify quotes, prices after the check, missing pending orders, account ownership, concurrent submissions, or live execution. The caller must serialize checking and submission. A static check is not a live trading safety guarantee.
+Inputs are JSON files with amounts written as decimal strings and timestamps in UTC. Stale snapshots are refused. The exit status is 0 for admit, 2 for refuse and 3 for malformed input. [VALIDATION.md](VALIDATION.md#order-guard-reference) has the full input rules, the exposure arithmetic and the output fields.
 
-The JSON output includes reason codes, exact computed amounts, canonical input hashes, ignored confidence and guard version. The complete schema and reason codes are in the module docstring; the three example JSON files are the smallest working inputs. CLI exits: 0 admission, 2 refusal, 3 malformed input.
+## Factor audit: check the experiment before the scores
 
-## Audit a factor experiment
+![Flowchart of the factor audit. Training files and the declared cutoff date feed a check of hashes and training dates. Recorded scores feed a check of the scoring window and then of score dates. The audit then compares recorded trials: the same factor on different valid folds passes, and a repeat of the same declared trial is flagged as a duplicate.](diagrams/visibility-window.png)
+
+When you construct a factor, write a manifest that declares:
+
+- its input files, each with a path, SHA-256 hash and date column;
+- its last visibility date;
+- which inputs built it;
+- which file scored it, and over which window.
+
+The audit hashes the actual bytes and scans the actual CSV dates. It then checks that the construction data end by the visibility date and that scoring falls after it. Run the audit before you compare results.
+
+**Pass.** This manifest records two historical folds of the same opaque factor specification:
 
 ```sh
 python3 factoraudit.py audit --manifest examples/campaign.json --root examples
 ```
 
-The example records two legitimate historical folds using the same opaque factor specification. Training data end on the declared visibility date; recorded score dates fall in a later window. Both folds pass. `REPEATED_SPEC` is informational and does not reject legitimate reuse.
+Both folds pass, with exit status 0. The audit reports `REPEATED_SPEC` as information only, because reusing a specification across legitimate folds is fine.
+
+**Fail.** This manifest declares the 2020 scoring file as a construction input for the first fold:
 
 ```sh
 python3 factoraudit.py audit --manifest examples/campaign-leak.json --root examples
 ```
 
-This deliberately adds the 2020 scoring file to the first fold's declared construction inputs. It fails `INPUT_VISIBILITY` and exits 1. Fix the data declaration or rebuild the experiment using the intended construction data before interpreting the scores.
+The `INPUT_VISIBILITY` rule fails, with exit status 1. Fix the declaration, or rebuild with the intended data, before you interpret the scores.
 
-Create a manifest when constructing a factor, then audit it before comparing experiment results. Each input declares an ID, relative path, expected SHA-256 and CSV date column. Each candidate records its ID and family, opaque specification path/hash, last simulated visibility date, construction input IDs, scoring input ID, and start/end scoring dates. `examples/campaign.json` shows every required field. Optional `holdout_start` adds the constraint that visibility precedes the holdout and scoring does not start before it.
+`examples/campaign.json` shows every required manifest field. The exit status is 0 if all rules pass, 1 if any rule fails, and 3 for malformed data or an I/O error.
 
-The tool hashes actual bytes and scans actual CSV dates. It reports changed files, construction dates after declared visibility, overlapping windows, scoring rows outside the declared window, repeated candidate IDs and identical declared trials under different IDs. Trial identity uses actual specification, construction and scoring file hashes plus declared dates, so renaming an input ID cannot hide an identical trial.
+### What a pass means
 
-Files must resolve under `--root`; traversal and escaping symlinks are rejected. Specs are hashed as opaque bytes and never evaluated. CSVs require unique nonempty headers, consistent row width, nonempty data and calendar dates. Limits are 1 MiB for the manifest, 10 MiB per referenced file by default, 100 MiB total unique referenced bytes, 1,000 inputs and 10,000 candidate entries. `--max-bytes` may change the per-file limit up to 100 MiB. Audit files while they are stable; this is not a secure snapshot against malicious or concurrent filesystem changes.
+Only the declared files, hashes and date windows passed. The audit cannot see a model's knowledge, inspect factor code, find omitted trials or test statistical significance. Specifications are hashed and never executed. Audit stable files, then continue with your planned statistical evaluation. [VALIDATION.md](VALIDATION.md#factor-audit-reference) explains the fields, file rules and remaining gaps.
 
-CLI exits: 0 scoped checks pass, 1 at least one rule fails, 3 malformed data or I/O error. `INFO` entries never fail. Reports contain evidence for each rule, recorded candidate counts and explicit scope. The Python API is `audit(manifest_path, root, max_bytes=10*1024*1024)` and raises `Malformed` for invalid input.
+## Evaluation
 
-Passing cannot establish what a model actually knew, data availability delays, point-in-time correctness, semantics of a factor, market-day coverage, unrecorded retries, a complete trial denominator, trusted timestamps, statistical significance, false discovery control or profitability. This is a manifest audit, not an implementation of an anytime-valid statistical referee.
-
-## Run the independent checks
+Run the two independent checks from the repository root:
 
 ```sh
 python3 check_orderguard.py
 python3 check_factoraudit.py
 ```
 
-The order check uses a separate exact rational accounting oracle for 2,000 seeded one-symbol cases, 4,000 confidence comparisons, and explicit multi-symbol, sell, freshness, decimal and malformed-input cases. The factor check uses original files with deliberately injected date, hash, duplicate and path errors, including a passing pair of historical folds. CI runs both checks and runnable examples on Python 3.10 and 3.12.
+| Check | Observed result |
+|---|---|
+| Order accounting | All 2,000 seeded cases matched an exact-fraction oracle: 395 admitted, 1,605 refused. All 4,000 confidence comparisons and 23 boundary cases passed. |
+| Factor audit | All 19 scenarios passed, covering valid folds and injected date, hash, duplicate and path errors. The clean example reports 15 PASS / 0 FAIL / 2 INFO; the leak reports 14 PASS / 1 FAIL / 2 INFO. |
 
-These checks establish behavior on the supplied cases. They do not reproduce a research paper's full evaluation or measure market performance. `VALIDATION.md` records the acceptance evidence and remaining integration responsibilities.
+These are constructed-input correctness checks, not measured trading returns or estimates of general accuracy. CI runs both checks, the paper loop and the clean factor example on Python 3.10 and 3.12. [VALIDATION.md](VALIDATION.md) contains the evidence, technical reference and release pin.
 
-## Research and prior workflow
+## Background
 
-The practical separation of model proposals from account constraints is motivated by [What LLM Trading Agents Actually Do in Production](https://arxiv.org/abs/2609.05663v1). Separating factor proposals from a declared evaluation boundary is motivated by [Propose, Don't Judge](https://arxiv.org/abs/2609.27051v1). These are original tools with narrower scopes than those studies; no paper implementation or reported trading results are claimed.
+[What LLM Trading Agents Actually Do in Production](https://arxiv.org/abs/2609.05663v1) informs the separation between model proposals and account constraints. [Propose, Don't Judge](https://arxiv.org/abs/2609.27051v1) informs the separation between factor proposals and evaluation. These tools implement narrower checks; they do not reproduce either paper's methods or results.
 
-The related [Layered Memory Trader](https://github.com/gael55x/LayeredMemoryTrader/blob/82ffbc6fc3306644ba40e871fdadf0b74d379e32/trader.py) is context for the workflow, not a dependency. Its public decision log lacks the quantities, prices and account state needed for exact execution replay. No upstream source or raw decision-log data are redistributed here.
+The earlier [LayeredMemoryTrader](https://github.com/gael55x/LayeredMemoryTrader) supplies workflow context, not a dependency or historical replay. Its decision log lacks the order quantities, prices and account state needed for replay. No upstream code or raw log data is redistributed.
 
-Editable Mermaid sources and rendered PNG/SVG diagrams are in `diagrams/`, with captions, alt text and hashes in its manifest. MIT license covers the original code and diagrams in this repository.
+Editable Mermaid sources and rendered images are in [diagrams/](diagrams/). Code and example data are original.
+
+## License
+
+MIT, covering the original code and diagrams in this repository.
