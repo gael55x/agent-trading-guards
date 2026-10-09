@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Codex-owned CLI checks fixed before lead source arrives; original data only."""
+"""Independent CLI checks fixed before the implementation; original data only."""
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import copy
