@@ -1,7 +1,6 @@
 {
   "status": "Implementation source and single-owner paper example reviewed against diagram contract; native Medium rendering pending",
   "renderer": "@mermaid-js/mermaid-cli@12.0.0",
-  "authorship": "Original Codex diagrams; original tools led by Claude Opus5.5 and independently reviewed by Codex",
   "captions": {
     "order-path": "A paper workflow boundary: user-owned limits and a fresh supplied snapshot determine admission. Confidence stays metadata. The single-owner caller updates the book after a simulated fill; this diagram does not establish live or concurrent execution safety.",
     "visibility-window": "An audit of declared knowledge and recorded scoring data. Reusing a factor in a different legitimate walk-forward fold is allowed; repeating the same declared trial is flagged. Declarations are not trusted timestamp or complete-knowledge evidence."

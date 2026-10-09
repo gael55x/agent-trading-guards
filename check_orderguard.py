@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""Codex's pre-implementation accounting oracle; imports only the reviewed target."""
+"""Independent accounting oracle written before the implementation; imports only the target."""
 from fractions import Fraction as F
 from pathlib import Path
 import copy
